@@ -12,6 +12,8 @@ from scipy.stats import spearmanr
 
 # 项目根目录（相对于 skill 目录: ../../.. 即项目根）
 PROJECT_ROOT = Path(__file__).resolve().parents[4]  # scripts/ → skill/ → skills/ → .claude/ → quantskills/
+sys.path.insert(0, str(PROJECT_ROOT / ".claude/skills/skill-pandadata-api/scripts"))
+from pandadata_runtime import init_pandadata  # noqa: E402 (path setup before import)
 
 WINSORIZE_NSIG = 5.0
 MIN_SAMPLES = 30
@@ -91,8 +93,6 @@ def daily_turnover(signal: pd.Series) -> float:
 
 def load_industry_map(symbols: list):
     """从 Pandadata get_stock_detail 批量获取行业分类"""
-    sys.path.insert(0, str(PROJECT_ROOT / ".claude/skills/skill-pandadata-api/scripts"))
-    from pandadata_runtime import init_pandadata
     pd_api = init_pandadata()
 
     industry_map = {}
@@ -183,6 +183,12 @@ def main():
                         help="因子输入目录")
     parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "data/factors_orthogonalized"),
                         help="残差因子输出目录")
+    parser.add_argument("--indicator", default="000300",
+                        help="Pandadata 股票池指数代码 (默认 000300=沪深300)")
+    parser.add_argument("--start-date", default="20201201",
+                        help="Pandadata 起始日期 YYYYMMDD")
+    parser.add_argument("--end-date", default="20250131",
+                        help="Pandadata 结束日期 YYYYMMDD")
     args = parser.parse_args()
 
     factor_dir = Path(args.factor_dir)
@@ -213,17 +219,18 @@ def main():
 
     # 风格控制（从 Pandadata 拉 OHLCV）
     print("计算风格控制变量...")
-    sys.path.insert(0, str(PROJECT_ROOT / ".claude/skills/skill-pandadata-api/scripts"))
-    from pandadata_runtime import init_pandadata
     pd_api = init_pandadata()
     raw = pd_api.get_stock_daily(
-        start_date="20201201", end_date="20250131",
-        fields=[], indicator="000300", st=False,
+        start_date=args.start_date, end_date=args.end_date,
+        fields=[], indicator=args.indicator, st=False,
     )
     raw["date"] = pd.to_datetime(raw["date"], format="%Y%m%d")
     raw.columns = [c.lower() for c in raw.columns]
     if "trade_status" in raw.columns:
         raw = raw[raw["trade_status"] == 0]
+    # 计算 forward_ret_5d 用于 IC 诊断（不在回归中使用）
+    raw["forward_ret_5d"] = raw.groupby("symbol")["close"].shift(-5) / raw["close"] - 1
+    fwd_ret = raw.set_index(["date", "symbol"])["forward_ret_5d"]
     style_controls = compute_style_controls(raw)
 
     # 逐因子正交化
@@ -235,11 +242,16 @@ def main():
         out_path = output_dir / f"{name}_residual.parquet"
         out.to_parquet(out_path, index=False)
 
-        # 快速诊断
-        ic_before = daily_rank_ic(signal, raw.set_index(["date", "symbol"]).get("close", pd.Series())).mean()
+        # 快速诊断：检查所有风格暴露清零
+        ic_before = daily_rank_ic(signal, fwd_ret).mean()
+        ic_after = daily_rank_ic(residual, fwd_ret).mean()
         exp_size_before = daily_exposure(signal, style_controls["log_dollar_vol"]).mean()
         exp_size_after = daily_exposure(residual, style_controls["log_dollar_vol"]).mean()
-        print(f"  {name}: size_exp {exp_size_before:+.4f} → {exp_size_after:+.4f}  ✅")
+        exp_beta_after = daily_exposure(residual, style_controls["beta_60d"]).mean()
+        exp_vol_after = daily_exposure(residual, style_controls["volatility_20d"]).mean()
+        print(f"  {name}: IC {ic_before:+.5f} → {ic_after:+.5f}  "
+              f"size {exp_size_before:+.4f} → {exp_size_after:+.4f}  "
+              f"beta→{exp_beta_after:+.4f}  vol→{exp_vol_after:+.4f}  ✅")
 
     print(f"\n✅ 残差因子保存至: {output_dir}")
 

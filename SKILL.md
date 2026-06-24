@@ -83,6 +83,7 @@ quantSkills:
 | `pandas` | DataFrame 截面操作、groupby-apply | ≥2.0 |
 | `scipy` | `spearmanr` — 计算 rank IC（pandas `corr(method="spearman")` 依赖 scipy） | ≥1.10 |
 | `pyarrow` | 读写 `.parquet` 因子文件 | ≥10.0 |
+| `panda_data` | Pandadata A 股数据 API + `pandadata_runtime`（来自 `skill-pandadata-api`） | ≥0.0.9 |
 
 一键安装：
 
@@ -120,7 +121,7 @@ Pandadata(get_stock_detail) → 行业分类
 Pandadata(get_stock_daily)  → OHLCV → log_dollar_vol / beta_60d / volatility_20d
 data/factors/F*.parquet     → 原始因子信号
                                     ↓
-                          orthogonalize_real.py
+                          scripts/orthogonalize.py
                           逐日 OLS 残差化
                                     ↓
                   data/factors_orthogonalized/F*_residual.parquet
