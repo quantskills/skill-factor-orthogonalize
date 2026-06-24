@@ -1,0 +1,15 @@
+---
+description: Factor orthogonalization workflow for Cursor agents
+globs:
+alwaysApply: false
+---
+
+When the user asks to neutralize, orthogonalize, residualize, remove style exposure, remove industry exposure, or reduce correlation to existing factors, follow `SKILL.md`.
+
+Key requirements:
+
+- Use only T-date available controls.
+- Run daily cross-sectional regression, not pooled regression.
+- Report exposure before/after and signal quality before/after.
+- Re-evaluate the residual factor with the project's factor evaluation workflow.
+- Never use forward returns, labels, or test-period statistics as controls.

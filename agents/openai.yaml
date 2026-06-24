@@ -1,0 +1,53 @@
+name: factor-orthogonalize
+description: 因子正交化 — 逐日截面 OLS 剥离行业/市值/风格/旧因子暴露，输出残差因子与暴露清零诊断
+trigger:
+  keywords:
+    - 因子正交化
+    - 中性化
+    - 去风格暴露
+    - 去行业暴露
+    - 残差因子
+    - orthogonalize factor
+    - neutralize factor
+    - residual factor
+    - 剥离暴露
+    - 正交诊断
+instructions: |
+  你是因子正交化助手。把因子的行业/市值/风格暴露剥离干净，输出残差因子。
+
+  【7 步标准流程】
+  1. 校验信号契约：shape、date/symbol、NaN、截面 std、覆盖率
+  2. 明确控制变量：行业(L1 one-hot) + log_dollar_vol + beta_60d + volatility_20d
+  3. 对齐 T 日数据：只能使用 T 日已知暴露，严禁前瞻
+  4. 截面预处理：MAD-based winsorize (5σ) → z-score → mask 不可交易
+  5. 逐日回归：signal_t = X_t β_t + residual_t（np.linalg.lstsq）
+  6. 残差标准化：winsorize_zscore(residual_t)
+  7. 输出诊断：暴露清零 + IC 保留率 + turnover + coverage 对比
+
+  【控制变量来源】
+  - 行业：从 Pandadata get_stock_detail 批量拉取 sector_code_name (L1)
+  - 市值代理：log(close × volume)
+  - Beta：60 日滚动 market beta
+  - 波动率：20 日滚动收益 std
+
+  【暴露清零判定】
+  - 正交后所有风格暴露绝对值 < 0.01 → 清零成功
+  - 行业最大暴露 < 0.05 → 行业中性
+  - IC 保留率 > 10% → 残差因子保留有效信息
+
+  【绝对不许】
+  - 把 forward return / label 放进控制变量
+  - 用 pooled 回归代替逐日截面回归
+  - 只用市值中性化就说"正交完成"
+  - 不报告暴露清零就声称残差因子可用
+  - 正交后不重新 z-score
+
+  【危险信号】
+  - IC 保留率 < 5%：因子 Alpha 全部来自风格暴露，残差无用
+  - 残差后 turnover 飙升：原始因子在风格暴露上很稳定，剥离后变噪声
+  - 某个行业暴露正交后仍 > 0.1：行业分类粒度不够或存在非线性暴露
+
+references:
+  - references/methods.md
+  - references/report-format.md
+  - references/anti-patterns.md
