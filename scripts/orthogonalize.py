@@ -10,10 +10,18 @@ import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 
-# 项目根目录（相对于 skill 目录: ../../.. 即项目根）
-PROJECT_ROOT = Path(__file__).resolve().parents[4]  # scripts/ → skill/ → skills/ → .claude/ → quantskills/
-sys.path.insert(0, str(PROJECT_ROOT / ".claude/skills/skill-pandadata-api/scripts"))
-from pandadata_runtime import init_pandadata  # noqa: E402 (path setup before import)
+# Pandadata runtime 导入（相对于本脚本：../skill-pandata-api/scripts/）
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_SKILLS_DIR = _SCRIPT_DIR.parent.parent  # scripts/ → skill-*/ → skills/
+_PANDADATA_SCRIPTS = _SKILLS_DIR / "skill-pandadata-api" / "scripts"
+if _PANDADATA_SCRIPTS.is_dir():
+    sys.path.insert(0, str(_PANDADATA_SCRIPTS))
+try:
+    from pandadata_runtime import init_pandadata  # noqa: E402
+except ImportError:
+    print("❌ 无法导入 pandadata_runtime。请确保 skill-pandadata-api 已安装在本 skills 目录中。")
+    print(f"   预期路径: {_PANDADATA_SCRIPTS}")
+    sys.exit(1)
 
 WINSORIZE_NSIG = 5.0
 MIN_SAMPLES = 30
@@ -179,9 +187,9 @@ def orthogonalize_one(factor_signal: pd.Series, industry_map: dict,
 
 def main():
     parser = argparse.ArgumentParser(description="因子正交化")
-    parser.add_argument("--factor-dir", default=str(PROJECT_ROOT / "data/factors"),
-                        help="因子输入目录")
-    parser.add_argument("--output-dir", default=str(PROJECT_ROOT / "data/factors_orthogonalized"),
+    parser.add_argument("--factor-dir", default="data/factors",
+                        help="因子输入目录（相对于工作目录或绝对路径）")
+    parser.add_argument("--output-dir", default="data/factors_orthogonalized",
                         help="残差因子输出目录")
     parser.add_argument("--indicator", default="000300",
                         help="Pandadata 股票池指数代码 (默认 000300=沪深300)")
@@ -214,16 +222,25 @@ def main():
 
     # 行业分类
     print(f"拉取 {len(all_symbols)} 只股票的行业分类...")
-    industry_map = load_industry_map(list(all_symbols))
+    try:
+        industry_map = load_industry_map(list(all_symbols))
+    except Exception as e:
+        print(f"❌ Pandadata 行业分类拉取失败: {e}")
+        print("   请检查: 1) Pandadata 凭证是否配置 2) 网络连接 3) API 服务状态")
+        sys.exit(1)
     print(f"  行业数: {len(set(industry_map.values()))}")
 
     # 风格控制（从 Pandadata 拉 OHLCV）
     print("计算风格控制变量...")
-    pd_api = init_pandadata()
-    raw = pd_api.get_stock_daily(
+    try:
+        pd_api = init_pandadata()
+        raw = pd_api.get_stock_daily(
         start_date=args.start_date, end_date=args.end_date,
         fields=[], indicator=args.indicator, st=False,
     )
+    except Exception as e:
+        print(f"❌ Pandadata OHLCV 拉取失败: {e}")
+        sys.exit(1)
     raw["date"] = pd.to_datetime(raw["date"], format="%Y%m%d")
     raw.columns = [c.lower() for c in raw.columns]
     if "trade_status" in raw.columns:
