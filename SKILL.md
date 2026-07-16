@@ -30,6 +30,44 @@ quantSkills:
   repository: https://github.com/quantskills/skill-factor-orthogonalize
 ---
 
+```json qsh-form
+{
+  "version": 1,
+  "task": {
+    "placeholder": "请说明或上传原始 [date × symbol] 因子信号、数据路径及期望输出位置",
+    "required": true
+  },
+  "fields": [
+    {
+      "key": "factor",
+      "label": "原始因子或信号",
+      "type": "text",
+      "placeholder": "因子名、列名或信号文件路径"
+    },
+    {
+      "key": "universe",
+      "label": "股票池",
+      "type": "select",
+      "default": "000300.SH",
+      "options": [
+        { "value": "000300.SH", "label": "沪深300" },
+        { "value": "000905.SH", "label": "中证500" },
+        { "value": "399006.SZ", "label": "创业板指" },
+        { "value": "000852.SH", "label": "中证1000" }
+      ]
+    },
+    {
+      "key": "controls",
+      "label": "需剥离的暴露",
+      "type": "textarea",
+      "default": "行业、市值、beta、波动率",
+      "placeholder": "如：行业、市值、beta、波动率、流动性、已有因子"
+    }
+  ],
+  "prompt_template": "{{#task}}任务与材料：\n{{task}}\n\n{{/task}}{{#attachments}}用户上传的材料（已放入工作区）：\n{{attachments}}\n\n{{/attachments}}请对原始因子/信号{{#factor}}（{{factor}}）{{/factor}}在股票池 {{universe}} 内做逐日截面正交化；若表单未指明因子，以任务材料/附件给出的信号为准。剥离以下暴露：{{controls}}；仅使用当时可得控制变量，输出标准化残差因子，并比较正交前后的暴露、IC、Sharpe、换手率与覆盖率，输出中文报告。"
+}
+```
+
 # Factor Orthogonalize
 
 > 给定一个截面信号 `[date × symbol]`，把可解释的行业 / 市值 / 风格 / 旧因子暴露剥离掉，输出**残差因子**和正交前后诊断报告。
