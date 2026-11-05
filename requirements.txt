@@ -2,4 +2,4 @@ numpy>=1.24
 pandas>=2.0
 scipy>=1.10
 pyarrow>=10.0
-panda_data>=0.0.9
+panda_data==1.0.6

@@ -26,7 +26,7 @@ quantSkills:
   maintainer_type: community
   summary_zh: 逐日截面 OLS 正交化：剥离行业(L1 one-hot) + 市值(log_dollar_vol) + 风格(beta/volatility) + 旧因子暴露，输出残差因子与暴露清零诊断报告。已对接 Pandadata 获取行业分类(sector_code_name)和风格控制变量。
   summary_en: Daily cross-sectional OLS orthogonalization against industry one-hot dummies, size (log dollar volume), style (beta, volatility), and legacy factor exposures. Outputs residual signal with exposure-zeroing diagnostics. Integrated with Pandadata for sector classification and style controls.
-  license: GPL-3.0
+  license: GPL-3.0-only
   repository: https://github.com/quantskills/skill-factor-orthogonalize
 ---
 
@@ -193,3 +193,7 @@ data/factors/F*.parquet     → 原始因子信号
 - **已知限制**：正交化会降低信号强度，不能证明残差因子未来有效；控制变量缺失、行业分类变更、极端小样本截面会造成残差不稳定。
 - **风险边界**：正交后评分、相关性和暴露诊断仅反映历史数据 + 假设条件下的统计表现，不代表未来表现。
 - **用途定位**：仅供量化研究、教育与方法论参考。不构成任何形式的投资建议、交易信号或获利保证。
+
+## Pandadata compatibility
+
+[Pandadata 1.0.6 compatibility](references/pandadata-compatibility.md) — exact SDK baseline, validation scope, and shared guidance for all supported agent runtimes.

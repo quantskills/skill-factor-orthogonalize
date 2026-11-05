@@ -1,0 +1,45 @@
+{
+  "sdk_version": "1.0.6",
+  "contract_repository": "quantskills/skill-pandadata-api",
+  "contract_commit": "3f573a4140e4d1d02c556d981fac347168c943bb",
+  "required_methods": [
+    "get_stock_daily",
+    "get_stock_detail"
+  ],
+  "validation": {
+    "offline_contract": "passed",
+    "live_service": "not_tested"
+  },
+  "runtime_entrypoint": "SKILL.md",
+  "method_contracts": {
+    "get_stock_daily": {
+      "signature": "(symbol: 'Optional[Union[str, List[str]]]' = '', start_date: 'str' = '', end_date: 'str' = '', fields: 'Optional[Union[str, List[str]]]' = None, indicator: 'Optional[str]' = '', st: 'Optional[bool]' = True, **kwargs) -> 'pd.DataFrame'",
+      "parameters": [
+        "symbol",
+        "start_date",
+        "end_date",
+        "fields",
+        "indicator",
+        "st"
+      ],
+      "required": [],
+      "runtime_required": [
+        "end_date",
+        "start_date"
+      ],
+      "upstream_warning": false
+    },
+    "get_stock_detail": {
+      "signature": "(symbol: 'Optional[Union[str, List[str]]]' = '', fields: 'Optional[Union[str, List[str]]]' = None, status: 'Optional[int]' = None, date: 'Optional[str]' = None, **kwargs) -> 'pd.DataFrame'",
+      "parameters": [
+        "symbol",
+        "fields",
+        "status",
+        "date"
+      ],
+      "required": [],
+      "runtime_required": [],
+      "upstream_warning": false
+    }
+  }
+}
